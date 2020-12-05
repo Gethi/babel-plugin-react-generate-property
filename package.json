@@ -1,5 +1,5 @@
 {
-  "name": "babel-plugin-react-generate-property",
+  "name": "babel-plugin-react-generate-property-rework-proposal",
   "version": "1.0.4",
   "description": "A plugin to automatically generate properties (for example data attributes) for all JSX open tags, using user specified convention",
   "main": "lib/index.js",

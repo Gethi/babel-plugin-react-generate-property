@@ -1,5 +1,10 @@
+let uniqAttr = new Map();
+
 module.exports = function({ types: t }) {
   return {
+    pre(state){
+      state.scope.globals.uniqAttr = uniqAttr;
+    },
     visitor: {
       Program(programPath, state) {
         // Get user configs
@@ -9,6 +14,8 @@ module.exports = function({ types: t }) {
           dirLevel = 1
         } = state.opts;
         const filename = state.file.opts.filename;
+        let uniqAttrGlobal = programPath.scope.globals.uniqAttr;
+        
 
         const splits = filename.split(slashChar);
         if (!splits || !splits.length) {
@@ -26,7 +33,8 @@ module.exports = function({ types: t }) {
         programPath.traverse({
           JSXElement(jsxPath) {
             let nodeName = "",
-              dataIDDefined = false;
+              dataIDDefined = false,
+              resultTagValue = "";
 
             // Traverse once to get the element node name (div, Header, span, etc)
             jsxPath.traverse({
@@ -34,6 +42,18 @@ module.exports = function({ types: t }) {
                 openingPath.stop(); // Do not visit child nodes again
                 const identifierNode = openingPath.get("name").node;
                 nodeName = identifierNode.name;
+
+                resultTagValue = `${fileIdentifier}_${nodeName}`;   
+                
+                  const exist = uniqAttrGlobal.get(resultTagValue);
+                  if(exist) {
+                    uniqAttrGlobal.set(resultTagValue, exist+1);
+                  } else {
+                    uniqAttrGlobal.set(resultTagValue, 1);
+                  }
+                  resultTagValue = `${resultTagValue}_${uniqAttrGlobal.get(resultTagValue)}`
+
+
                 openingPath.traverse({
                   JSXAttribute(attributePath) {
                     // If the data attribute doesn't exist, then we append the data attribute
@@ -50,12 +70,14 @@ module.exports = function({ types: t }) {
               jsxPath.node.openingElement.attributes.push(
                 t.jSXAttribute(
                   t.jSXIdentifier(customProperty),
-                  t.stringLiteral(`${fileIdentifier}_${nodeName}`)
+                  t.stringLiteral(`${resultTagValue}`)
                 )
               );
             }
           }
         });
+
+        uniqAttr = uniqAttrGlobal;
       }
     }
   };
